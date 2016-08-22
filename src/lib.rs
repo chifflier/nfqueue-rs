@@ -1,3 +1,59 @@
+//!  Netfilter NFQUEUE high-level bindings
+//!
+//! libnetfilter_queue is a userspace library providing an API to packets that
+//! have been queued by the kernel packet filter. It is is part of a system that
+//! deprecates the old ip_queue / libipq mechanism.
+//!
+//! libnetfilter_queue homepage is: http://netfilter.org/projects/libnetfilter_queue/
+//!
+//! The goal is to provide a library to gain access to packets queued by the
+//! kernel packet filter
+//!
+//! **Using NFQUEUE requires root privileges, or the `CAP_NET_ADMIN` capability**
+//!
+//! The code is available on [Github](https://github.com/chifflier/nfqueue-rs)
+//!
+//! # Example
+//!
+//! ```rust,ignore
+//! extern crate libc;
+//! extern crate nfqueue;
+//! use std::fmt::Write;
+//!
+//! fn callback(msg: &nfqueue::Message) {
+//!     println!(" -> msg: {}", msg);
+//!
+//!     let payload_data = msg.get_payload();
+//!     let mut s = String::new();
+//!     for &byte in payload_data {
+//!         write!(&mut s, "{:X} ", byte).unwrap();
+//!     }
+//!     println!("{}", s);
+//!
+//!     println!("XML\n{}", msg.as_xml_str(&[nfqueue::XMLFormatFlags::XmlAll]).unwrap());
+//!
+//!     msg.set_verdict(nfqueue::Verdict::Accept);
+//! }
+//!
+//! fn main() {
+//!     let mut q = nfqueue::Queue::new();
+//!
+//!     q.open();
+//!
+//!     let rc = q.bind(libc::AF_INET);
+//!     assert!(rc == 0);
+//!
+//!     q.create_queue(0, callback);
+//!     q.set_mode(nfqueue::CopyMode::CopyPacket, 0xffff);
+//!
+//!     q.set_callback(callback);
+//!     q.run_loop();
+//!
+//!     q.close();
+//! }
+//! ```
+
+
 extern crate libc;
 
 pub use hwaddr::*;
@@ -129,6 +185,16 @@ impl Queue {
     }
 
 
+    /// create a new queue handler bind it to a queue number, and to a callback.
+    ///
+    /// Creates a new queue handle, and returns it. The new queue is identified
+    /// by `num`, and the callback specified by `cb` will be called for each
+    /// enqueued packet.
+    ///
+    /// Arguments
+    ///
+    /// * `num`: the number of the queue to bind to
+    /// * `cb`: callback function to call for each queued packet
     pub fn create_queue(&mut self, num: u16, cb: NfqueueCallback) {
         assert!(!self.qh.is_null());
         assert!(self.qqh.is_null());

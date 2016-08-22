@@ -6,9 +6,9 @@ fn queue_callback(msg: &nfqueue::Message) {
 
     println!(" -> msg: {}", msg);
 
-    msg.set_verdict(nfqueue::Verdict::Accept);
-
     println!("XML\n{}", msg.as_xml_str(&[nfqueue::XMLFormatFlags::XmlAll]).unwrap());
+
+    msg.set_verdict(nfqueue::Verdict::Accept);
 }
 
 fn main() {
