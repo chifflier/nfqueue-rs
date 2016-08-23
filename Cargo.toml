@@ -1,4 +1,9 @@
 [package]
+description = " Netfilter NFQUEUE high-level bindings"
+license = "GPL-2.0+"
+keywords = ["netfilter","queue","nfqueue"]
+homepage = "https://github.com/chifflier/nfqueue-rs"
+repository = "https://github.com/chifflier/nfqueue-rs.git"
 
 name = "nfqueue"
 version = "0.9.0"
