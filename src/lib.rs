@@ -111,7 +111,7 @@ pub struct Queue<T> {
 }
 
 
-impl <T> Queue<T> {
+impl <T: Send> Queue<T> {
     /// Creates a new, uninitialized, `Queue`.
     pub fn new(data: T) -> Queue<T> {
         return Queue {
@@ -277,8 +277,7 @@ impl <T> Queue<T> {
 
 
 #[doc(hidden)]
-#[no_mangle]
-pub extern "C" fn real_callback<T>(qqh: *const libc::c_void, _nfmsg: *const libc::c_void, nfad: *const libc::c_void, data: *const libc::c_void ) {
+extern "C" fn real_callback<T>(qqh: *const libc::c_void, _nfmsg: *const libc::c_void, nfad: *const libc::c_void, data: *const libc::c_void ) {
     let raw : *mut Queue<T> = unsafe { std::mem::transmute(data) };
 
     let ref mut q = unsafe { &mut *raw };
