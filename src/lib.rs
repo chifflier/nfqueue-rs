@@ -103,20 +103,22 @@ const NFQNL_COPY_PACKET : u8 = 0x02;
 
 
 /// Opaque struct `Queue`: abstracts an NFLOG queue
-pub struct Queue {
+pub struct Queue<T> {
     qh  : NfqueueHandle,
     qqh : NfqueueQueueHandle,
-    cb  : Option<NfqueueCallback>,
+    cb  : Option<fn (&Message, &mut T) -> ()>,
+    data: T,
 }
 
 
-impl Queue {
+impl <T: Send> Queue<T> {
     /// Creates a new, uninitialized, `Queue`.
-    pub fn new() -> Queue {
+    pub fn new(data: T) -> Queue<T> {
         return Queue {
             qh : std::ptr::null_mut(),
             qqh : std::ptr::null_mut(),
             cb: None,
+            data: data,
         };
     }
 
@@ -195,12 +197,12 @@ impl Queue {
     ///
     /// * `num`: the number of the queue to bind to
     /// * `cb`: callback function to call for each queued packet
-    pub fn create_queue(&mut self, num: u16, cb: NfqueueCallback) {
+    pub fn create_queue(&mut self, num: u16, cb: fn(&Message, &mut T)) {
         assert!(!self.qh.is_null());
         assert!(self.qqh.is_null());
         let self_ptr = unsafe { std::mem::transmute(&*self) };
         self.cb = Some(cb);
-        self.qqh = unsafe { nfq_create_queue(self.qh, num, real_callback, self_ptr) };
+        self.qqh = unsafe { nfq_create_queue(self.qh, num, real_callback::<T>, self_ptr) };
     }
 
     /// Destroys a group handle
@@ -275,18 +277,17 @@ impl Queue {
 
 
 #[doc(hidden)]
-#[no_mangle]
-pub extern "C" fn real_callback(qqh: *const libc::c_void, _nfmsg: *const libc::c_void, nfad: *const libc::c_void, data: *const libc::c_void ) {
-    let raw : *mut Queue = unsafe { std::mem::transmute(data) };
+extern "C" fn real_callback<T>(qqh: *const libc::c_void, _nfmsg: *const libc::c_void, nfad: *const libc::c_void, data: *const libc::c_void ) {
+    let raw : *mut Queue<T> = unsafe { std::mem::transmute(data) };
 
-    let ref mut q = unsafe { &*raw };
+    let ref mut q = unsafe { &mut *raw };
     let mut msg = Message::new (qqh, nfad);
 
     match q.cb {
         None => panic!("no callback registered"),
         Some(callback) => {
-            callback(&mut msg);
-            },
+            callback(&mut msg, &mut q.data);
+        },
     }
 }
 
