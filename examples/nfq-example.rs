@@ -1,18 +1,31 @@
 extern crate nfqueue;
 extern crate libc;
 
-fn queue_callback(msg: &nfqueue::Message) {
+struct State {
+    count: u32,
+}
+
+impl State {
+    pub fn new() -> State {
+        State{ count:0 }
+    }
+}
+
+fn queue_callback(msg: &nfqueue::Message, state:&mut State) {
     println!("Packet received [id: 0x{:x}]\n", msg.get_id());
 
     println!(" -> msg: {}", msg);
 
     println!("XML\n{}", msg.as_xml_str(&[nfqueue::XMLFormatFlags::XmlAll]).unwrap());
 
+    state.count += 1;
+    println!("count: {}", state.count);
+
     msg.set_verdict(nfqueue::Verdict::Accept);
 }
 
 fn main() {
-    let mut q = nfqueue::Queue::new();
+    let mut q = nfqueue::Queue::new(State::new());
     println!("nfqueue example program: print packets metadata and accept packets");
 
     q.open();

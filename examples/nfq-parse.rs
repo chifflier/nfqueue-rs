@@ -13,6 +13,16 @@ use pnet::packet::icmp::{IcmpPacket, echo_reply, echo_request, IcmpTypes};
 use pnet::packet::udp::UdpPacket;
 use pnet::packet::tcp::TcpPacket;
 
+struct State {
+    count: u32,
+}
+
+impl State {
+    pub fn new() -> State {
+        State{ count:0 }
+    }
+}
+
 
 fn print_bytes(array : &[u8]) {
     for byte in array {
@@ -124,9 +134,11 @@ fn handle_transport_protocol(id: u32, source: IpAddr, destination: IpAddr, proto
     }
 }
 
-fn queue_callback(msg: &nfqueue::Message) {
+fn queue_callback(msg: &nfqueue::Message, state: &mut State) {
     println!("\n---");
     println!("Packet received [id: 0x{:x}]\n", msg.get_id());
+
+    state.count += 1;
 
     // assume IPv4
     let header = Ipv4Packet::new(msg.get_payload());
@@ -145,7 +157,7 @@ fn queue_callback(msg: &nfqueue::Message) {
 }
 
 fn main() {
-    let mut q = nfqueue::Queue::new();
+    let mut q = nfqueue::Queue::new(State::new());
     println!("nfqueue example program: parse packet protocol layers and accept packet");
 
     q.open();

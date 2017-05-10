@@ -305,7 +305,7 @@ mod tests {
 
     #[test]
     fn nfqueue_open() {
-        let mut q = ::Queue::new();
+        let mut q = ::Queue::new(());
 
         q.open();
 
@@ -320,7 +320,7 @@ mod tests {
     #[test]
     #[ignore]
     fn nfqueue_bind() {
-        let mut q = ::Queue::new();
+        let mut q = ::Queue::new(());
 
         q.open();
 
