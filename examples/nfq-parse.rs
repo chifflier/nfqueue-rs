@@ -9,7 +9,7 @@ extern crate pnet;
 use pnet::packet::Packet;
 use pnet::packet::ipv4::Ipv4Packet;
 use pnet::packet::ip::{IpNextHeaderProtocol,IpNextHeaderProtocols};
-use pnet::packet::icmp::{IcmpPacket, echo_reply, echo_request, icmp_types};
+use pnet::packet::icmp::{IcmpPacket, echo_reply, echo_request, IcmpTypes};
 use pnet::packet::udp::UdpPacket;
 use pnet::packet::tcp::TcpPacket;
 
@@ -52,7 +52,7 @@ fn handle_icmp_packet(id: u32, source: IpAddr, destination: IpAddr, packet: &[u8
     let icmp_packet = IcmpPacket::new(packet);
     if let Some(icmp_packet) = icmp_packet {
         match icmp_packet.get_icmp_type() {
-            icmp_types::EchoReply => {
+            IcmpTypes::EchoReply => {
                 let echo_reply_packet = echo_reply::EchoReplyPacket::new(packet).unwrap();
                 println!("[{}]: ICMP echo reply {} -> {} (seq={:?}, id={:?})",
                         id,
@@ -61,7 +61,7 @@ fn handle_icmp_packet(id: u32, source: IpAddr, destination: IpAddr, packet: &[u8
                         echo_reply_packet.get_sequence_number(),
                         echo_reply_packet.get_identifier());
             },
-            icmp_types::EchoRequest => {
+            IcmpTypes::EchoRequest => {
                 let echo_request_packet = echo_request::EchoRequestPacket::new(packet).unwrap();
                 println!("[{}]: ICMP echo request {} -> {} (seq={:?}, id={:?})",
                         id,
