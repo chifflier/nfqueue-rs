@@ -18,6 +18,7 @@ pub enum NfqueueError {
 }
 
 /// Decision on the packet
+#[derive(Clone)]
 pub enum Verdict {
     /// Discard the packet
     Drop,
