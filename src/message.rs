@@ -215,7 +215,7 @@ impl Message {
         let c_len = u16::from_be(unsafe{(*c_hw).hw_addrlen}) as usize;
         match c_len {
             0 => Err(NfqueueError::NoSuchAttribute),
-            _ => Ok( HwAddr::new(unsafe{&((*c_hw).hw_addr)[1..c_len]})),
+            _ => Ok( HwAddr::new(unsafe{&((*c_hw).hw_addr)[0..c_len]})),
         }
     }
 
