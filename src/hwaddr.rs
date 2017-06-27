@@ -18,7 +18,7 @@ impl<'a> fmt::Display for HwAddr<'a> {
         let s = self._hw.iter().fold(
             String::new(),
             |acc, &b| {
-                (if acc.len()>0 {acc + ":"} else {acc}) + &format!("{:2x}",b)
+                (if acc.len()>0 {acc + ":"} else {acc}) + &format!("{:02x}",b)
             }
         );
         return write!(out, "{}", s);
