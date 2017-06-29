@@ -10,6 +10,7 @@ pub struct Message {
     qqh  : *const libc::c_void,
     nfad : NfqueueData,
     id   : u32,
+    l3_proto : u16,
 }
 
 #[derive(Debug)]
@@ -125,16 +126,23 @@ impl Message {
         let msg_hdr = unsafe { nfq_get_msg_packet_hdr(nfad) as *const NfMsgPacketHdr };
         assert!(!msg_hdr.is_null());
         let id = u32::from_be( unsafe{(*msg_hdr).packet_id} );
+        let l3_proto = u16::from_be( unsafe{(*msg_hdr).hw_protocol} );
         Message {
             qqh : qqh,
             nfad: nfad,
             id : id,
+            l3_proto : l3_proto,
         }
     }
 
     /// Returns the unique ID of the packet
     pub fn get_id(&self) -> u32 {
         self.id
+    }
+
+    /// Returns the layer 3 protocol/EtherType of the packet (i.e. 0x0800 is IPv4)
+    pub fn get_l3_proto(&self) -> u16 {
+	self.l3_proto
     }
 
     /// Get the packet mark
