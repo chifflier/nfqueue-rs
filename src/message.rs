@@ -27,8 +27,8 @@ pub enum Verdict {
     Accept,
     /// Gone away
     Stolen,
-    /// Inject the packet into a different queue ((the target queue number is in the high 16 bits of the verdict)
-    Queue,
+    /// Inject the packet into a different queue (it's number passed as parameter).
+    Queue(u16),
     /// Iterate the same cycle one more
     Repeat,
     /// Accept, but don't continue iterations
@@ -44,12 +44,12 @@ const NF_STOP   : u32 = 0x0005;
 
 fn u32_of_verdict(v: Verdict) -> u32 {
     match v {
-        Verdict::Drop   => NF_DROP,
-        Verdict::Accept => NF_ACCEPT,
-        Verdict::Stolen => NF_STOLEN,
-        Verdict::Queue  => NF_QUEUE,
-        Verdict::Repeat => NF_REPEAT,
-        Verdict::Stop   => NF_STOP,
+        Verdict::Drop          => NF_DROP,
+        Verdict::Accept        => NF_ACCEPT,
+        Verdict::Stolen        => NF_STOLEN,
+        Verdict::Queue(queue)  => NF_QUEUE | ((queue as u32) << 16),
+        Verdict::Repeat        => NF_REPEAT,
+        Verdict::Stop          => NF_STOP,
     }
 }
 
