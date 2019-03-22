@@ -1,6 +1,6 @@
-extern crate libc;
+use libc;
 
-use hwaddr::*;
+use crate::hwaddr::*;
 use std;
 
 type NfqueueData = *const libc::c_void;
@@ -221,7 +221,7 @@ impl Message {
     /// The destination MAC address is not
     /// known until after POSTROUTING and a successful ARP request, so cannot
     /// currently be retrieved.
-    pub fn get_packet_hw(&self) -> Result<HwAddr, NfqueueError> {
+    pub fn get_packet_hw(&self) -> Result<HwAddr<'_>, NfqueueError> {
         let c_hw = unsafe { nfq_get_packet_hw(self.nfad) };
 
         if c_hw.is_null() {
@@ -348,7 +348,7 @@ use std::fmt;
 use std::fmt::Write;
 
 impl fmt::Display for Message {
-    fn fmt(&self, out: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, out: &mut fmt::Formatter<'_>) -> fmt::Result {
         let payload_data = self.get_payload();
         let mut s = String::new();
         for &byte in payload_data {

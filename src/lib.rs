@@ -53,12 +53,12 @@
 //! }
 //! ```
 
-extern crate libc;
+use libc;
 
-pub use hwaddr::*;
+pub use crate::hwaddr::*;
 mod hwaddr;
 
-pub use message::*;
+pub use crate::message::*;
 mod message;
 
 type NfqueueHandle = *const libc::c_void;
