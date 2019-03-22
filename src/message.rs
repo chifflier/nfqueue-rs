@@ -47,7 +47,7 @@ fn u32_of_verdict(v: Verdict) -> u32 {
         Verdict::Drop => NF_DROP,
         Verdict::Accept => NF_ACCEPT,
         Verdict::Stolen => NF_STOLEN,
-        Verdict::Queue(queue) => NF_QUEUE | ((queue as u32) << 16),
+        Verdict::Queue(queue) => NF_QUEUE | (u32::from(queue) << 16),
         Verdict::Repeat => NF_REPEAT,
         Verdict::Stop => NF_STOP,
     }
@@ -64,7 +64,7 @@ pub enum XMLFormatFlags {
     XmlAll,
 }
 
-const NFQ_XML_HW: u32 = (1 << 0);
+const NFQ_XML_HW: u32 = 1;
 const NFQ_XML_MARK: u32 = (1 << 1);
 const NFQ_XML_DEV: u32 = (1 << 2);
 const NFQ_XML_PHYSDEV: u32 = (1 << 3);
@@ -134,16 +134,16 @@ impl Message {
     ///
     /// **This function should never be called directly**
     #[doc(hidden)]
-    pub fn new(qqh: *const libc::c_void, nfad: *const libc::c_void) -> Message {
+    pub fn new(qqh: *const libc::c_void, nfad: NfqueueData) -> Message {
         let msg_hdr = unsafe { nfq_get_msg_packet_hdr(nfad) as *const NfMsgPacketHdr };
         assert!(!msg_hdr.is_null());
         let id = u32::from_be(unsafe { (*msg_hdr).packet_id });
         let l3_proto = u16::from_be(unsafe { (*msg_hdr).hw_protocol });
         Message {
-            qqh: qqh,
-            nfad: nfad,
-            id: id,
-            l3_proto: l3_proto,
+            qqh,
+            nfad,
+            id,
+            l3_proto,
         }
     }
 
@@ -159,7 +159,7 @@ impl Message {
 
     /// Get the packet mark
     pub fn get_nfmark(&self) -> u32 {
-        return unsafe { nfq_get_nfmark(self.nfad) };
+        unsafe { nfq_get_nfmark(self.nfad) }
     }
 
     /// Get the packet timestamp
@@ -181,7 +181,7 @@ impl Message {
     /// If the returned index is 0, the packet was locally generated or the
     /// input interface is not known (ie. `POSTROUTING`?).
     pub fn get_indev(&self) -> u32 {
-        return unsafe { nfq_get_indev(self.nfad) };
+        unsafe { nfq_get_indev(self.nfad) }
     }
 
     /// Get the physical interface that the packet was received through
@@ -190,7 +190,7 @@ impl Message {
     /// If the returned index is 0, the packet was locally generated or the
     /// physical input interface is no longer known (ie. `POSTROUTING`?).
     pub fn get_physindev(&self) -> u32 {
-        return unsafe { nfq_get_physindev(self.nfad) };
+        unsafe { nfq_get_physindev(self.nfad) }
     }
 
     /// Get the interface that the packet will be routed out
@@ -199,7 +199,7 @@ impl Message {
     /// If the returned index is 0, the packet is destined to localhost or
     /// the output interface is not yet known (ie. `PREROUTING`?).
     pub fn get_outdev(&self) -> u32 {
-        return unsafe { nfq_get_outdev(self.nfad) };
+        unsafe { nfq_get_outdev(self.nfad) }
     }
 
     /// Get the physical interface that the packet will be routed out
@@ -208,7 +208,7 @@ impl Message {
     /// If the returned index is 0, the packet is destined to localhost or
     /// the physical output interface is not yet known (ie. `PREROUTING`?).
     pub fn get_physoutdev(&self) -> u32 {
-        return unsafe { nfq_get_physoutdev(self.nfad) };
+        unsafe { nfq_get_physoutdev(self.nfad) }
     }
 
     /// Get hardware address
@@ -221,10 +221,10 @@ impl Message {
     /// The destination MAC address is not
     /// known until after POSTROUTING and a successful ARP request, so cannot
     /// currently be retrieved.
-    pub fn get_packet_hw<'a>(&'a self) -> Result<HwAddr<'a>, NfqueueError> {
+    pub fn get_packet_hw(&self) -> Result<HwAddr, NfqueueError> {
         let c_hw = unsafe { nfq_get_packet_hw(self.nfad) };
 
-        if c_hw == std::ptr::null() {
+        if c_hw.is_null() {
             return Err(NfqueueError::NoSuchAttribute);
         }
 
@@ -303,13 +303,13 @@ impl Message {
     /// Depending on set_mode, we may not have a payload.
     /// The actual amount and type of data retrieved by this function will
     /// depend on the mode set with the `set_mode()` function.
-    pub fn get_payload<'a>(&'a self) -> &'a [u8] {
+    pub fn get_payload(&self) -> &[u8] {
         let c_ptr = std::ptr::null_mut();
         let payload_len = unsafe { nfq_get_payload(self.nfad, &c_ptr) };
         let payload: &[u8] =
             unsafe { std::slice::from_raw_parts(c_ptr as *mut u8, payload_len as usize) };
 
-        return payload;
+        payload
     }
 
     /// Print the queued packet in XML format into a buffer

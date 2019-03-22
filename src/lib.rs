@@ -121,12 +121,12 @@ pub struct Queue<T> {
 impl<T: Send> Queue<T> {
     /// Creates a new, uninitialized, `Queue`.
     pub fn new(data: T) -> Queue<T> {
-        return Queue {
+        Queue {
             qh: std::ptr::null_mut(),
             qqh: std::ptr::null_mut(),
             cb: None,
-            data: data,
-        };
+            data,
+        }
     }
 
     /// Opens a NFLOG handler
@@ -163,7 +163,7 @@ impl<T: Send> Queue<T> {
     /// **Requires root privileges**
     pub fn bind(&self, pf: libc::c_int) -> i32 {
         assert!(!self.qh.is_null());
-        return unsafe { nfq_bind_pf(self.qh, pf) };
+        unsafe { nfq_bind_pf(self.qh, pf) }
     }
 
     /// Unbinds the nfqueue handler from a protocol family
@@ -180,7 +180,7 @@ impl<T: Send> Queue<T> {
     /// **Requires root privileges**
     pub fn unbind(&self, pf: libc::c_int) -> i32 {
         assert!(!self.qh.is_null());
-        return unsafe { nfq_unbind_pf(self.qh, pf) };
+        unsafe { nfq_unbind_pf(self.qh, pf) }
     }
 
     /// Returns the C file descriptor associated with the nfqueue handler
@@ -190,7 +190,7 @@ impl<T: Send> Queue<T> {
     /// connection handle.
     pub fn fd(&self) -> i32 {
         assert!(!self.qh.is_null());
-        return unsafe { nfq_fd(self.qh) };
+        unsafe { nfq_fd(self.qh) }
     }
 
     /// create a new queue handler bind it to a queue number, and to a callback.
@@ -206,7 +206,7 @@ impl<T: Send> Queue<T> {
     pub fn create_queue(&mut self, num: u16, cb: fn(&Message, &mut T)) {
         assert!(!self.qh.is_null());
         assert!(self.qqh.is_null());
-        let self_ptr = unsafe { std::mem::transmute(&*self) };
+        let self_ptr = &*self as *const Queue<T> as *mut libc::c_void;
         self.cb = Some(cb);
         self.qqh = unsafe { nfq_create_queue(self.qh, num, real_callback::<T>, self_ptr) };
     }
@@ -296,15 +296,15 @@ extern "C" fn real_callback<T>(
     nfad: *const libc::c_void,
     data: *const libc::c_void,
 ) {
-    let raw: *mut Queue<T> = unsafe { std::mem::transmute(data) };
+    let raw: *mut Queue<T> = data as *mut Queue<T>;
 
-    let ref mut q = unsafe { &mut *raw };
-    let mut msg = Message::new(qqh, nfad);
+    let q = &mut unsafe { &mut *raw };
+    let msg = Message::new(qqh, nfad);
 
     match q.cb {
         None => panic!("no callback registered"),
         Some(callback) => {
-            callback(&mut msg, &mut q.data);
+            callback(&msg, &mut q.data);
         }
     }
 }

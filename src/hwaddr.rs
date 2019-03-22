@@ -14,7 +14,7 @@ impl<'a> HwAddr<'a> {
 impl<'a> fmt::Display for HwAddr<'a> {
     fn fmt(&self, out: &mut fmt::Formatter) -> fmt::Result {
         let s = self._hw.iter().fold(String::new(), |acc, &b| {
-            (if acc.len() > 0 { acc + ":" } else { acc }) + &format!("{:02x}", b)
+            (if !acc.is_empty() { acc + ":" } else { acc }) + &format!("{:02x}", b)
         });
         return write!(out, "{}", s);
     }
