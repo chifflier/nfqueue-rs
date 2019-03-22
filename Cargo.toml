@@ -13,4 +13,4 @@ authors = [ "Pierre Chifflier <chifflier@wzdftpd.net>" ]
 libc = "^0.2"
 
 [dev_dependencies]
-pnet = "0.17.1"
+pnet = "^0.2"
