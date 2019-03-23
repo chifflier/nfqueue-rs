@@ -1,17 +1,12 @@
 // Some code borrowed from https://github.com/libpnet/libpnet/blob/master/examples/packetdump.rs
 
-extern crate libc;
-extern crate nfqueue;
-
-use std::net::IpAddr;
-
-extern crate pnet;
 use pnet::packet::icmp::{echo_reply, echo_request, IcmpPacket, IcmpTypes};
 use pnet::packet::ip::{IpNextHeaderProtocol, IpNextHeaderProtocols};
 use pnet::packet::ipv4::Ipv4Packet;
 use pnet::packet::tcp::TcpPacket;
 use pnet::packet::udp::UdpPacket;
 use pnet::packet::Packet;
+use std::net::IpAddr;
 
 struct State {
     count: u32,

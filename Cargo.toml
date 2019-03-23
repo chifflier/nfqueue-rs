@@ -9,9 +9,8 @@ homepage = "https://github.com/chifflier/nfqueue-rs"
 repository = "https://github.com/chifflier/nfqueue-rs.git"
 edition="2018"
 
-
 [dependencies]
 libc = "^0.2"
 
 [dev_dependencies]
-pnet = "^0.2"
+pnet = "0.22.0"

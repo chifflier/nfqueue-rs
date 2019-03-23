@@ -16,8 +16,6 @@
 //! # Example
 //!
 //! ```rust,ignore
-//! extern crate libc;
-//! extern crate nfqueue;
 //! use std::fmt::Write;
 //!
 //! fn callback(msg: &nfqueue::Message) {
@@ -312,18 +310,18 @@ extern "C" fn real_callback<T>(
 #[cfg(test)]
 mod tests {
 
-    extern crate libc;
+    use super::*;
 
     #[test]
     fn nfqueue_open() {
-        let mut q = ::Queue::new(());
+        let mut q = Queue::new(());
 
         q.open();
 
         let raw = q.qh as *const i32;
         println!("nfq_open: 0x{:x}", unsafe { *raw });
 
-        assert!(!q.qh.is_null());
+        assert_eq!(false, q.qh.is_null());
 
         q.close();
     }
@@ -331,7 +329,7 @@ mod tests {
     #[test]
     #[ignore]
     fn nfqueue_bind() {
-        let mut q = ::Queue::new(());
+        let mut q = Queue::new(());
 
         q.open();
 
@@ -342,7 +340,7 @@ mod tests {
 
         let rc = q.bind(libc::AF_INET);
         println!("q.bind: {}", rc);
-        assert!(q.bind(libc::AF_INET) == 0);
+        assert_eq!(0, q.bind(libc::AF_INET));
 
         q.close();
     }

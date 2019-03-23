@@ -1,5 +1,5 @@
-extern crate libc;
-extern crate nfqueue;
+use libc;
+use nfqueue;
 
 struct State {
     count: u32,
