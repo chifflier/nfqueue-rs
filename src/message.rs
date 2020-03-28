@@ -131,10 +131,7 @@ extern "C" {
 
 impl Message {
     /// Create a `Messsage` from a valid NfqueueData pointer
-    ///
-    /// **This function should never be called directly**
-    #[doc(hidden)]
-    pub fn new(qqh: *const libc::c_void, nfad: NfqueueData) -> Message {
+    pub(crate) fn new(qqh: *const libc::c_void, nfad: *const libc::c_void) -> Message {
         let msg_hdr = unsafe { nfq_get_msg_packet_hdr(nfad) as *const NfMsgPacketHdr };
         assert!(!msg_hdr.is_null());
         let id = u32::from_be(unsafe { (*msg_hdr).packet_id });
