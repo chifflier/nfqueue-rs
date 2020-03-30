@@ -33,22 +33,20 @@
 //!     msg.set_verdict(nfqueue::Verdict::Accept);
 //! }
 //!
-//! fn main() {
-//!     let mut q = nfqueue::Queue::new();
+//! let mut q = nfqueue::Queue::new();
 //!
-//!     q.open();
+//! q.open();
 //!
-//!     let rc = q.bind(libc::AF_INET);
-//!     assert!(rc == 0);
+//! let rc = q.bind(libc::AF_INET);
+//! assert!(rc == 0);
 //!
-//!     q.create_queue(0, callback);
-//!     q.set_mode(nfqueue::CopyMode::CopyPacket, 0xffff);
+//! q.create_queue(0, callback);
+//! q.set_mode(nfqueue::CopyMode::CopyPacket, 0xffff);
 //!
-//!     q.set_callback(callback);
-//!     q.run_loop();
+//! q.set_callback(callback);
+//! q.run_loop();
 //!
-//!     q.close();
-//! }
+//! q.close();
 //! ```
 
 use libc;
