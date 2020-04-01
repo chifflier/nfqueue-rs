@@ -179,10 +179,9 @@ fn queue_callback(msg: &nfqueue::Message, state: &mut State) {
 }
 
 fn main() {
-    let mut q = nfqueue::Queue::new(State::new());
+    let mut q = nfqueue::Queue::new(State::new()).unwrap();
     println!("nfqueue example program: parse packet protocol layers and accept packet");
 
-    q.open();
     q.unbind(libc::AF_INET); // ignore result, failure is not critical here
 
     let rc = q.bind(libc::AF_INET);
@@ -192,6 +191,4 @@ fn main() {
     q.set_mode(nfqueue::CopyMode::CopyPacket, 0xffff);
 
     q.run_loop();
-
-    q.close();
 }

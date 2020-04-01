@@ -1,4 +1,4 @@
-//!  Netfilter NFQUEUE high-level bindings
+//! Netfilter NFQUEUE high-level bindings
 //!
 //! libnetfilter_queue is a userspace library providing an API to packets that
 //! have been queued by the kernel packet filter. It is is part of a system that
@@ -18,7 +18,7 @@
 //! ```rust,ignore
 //! use std::fmt::Write;
 //!
-//! fn callback(msg: &nfqueue::Message) {
+//! fn callback(msg: &nfqueue::Message, _: &mut ()) {
 //!     println!(" -> msg: {}", msg);
 //!
 //!     let payload_data = msg.get_payload();
@@ -33,9 +33,7 @@
 //!     msg.set_verdict(nfqueue::Verdict::Accept);
 //! }
 //!
-//! let mut q = nfqueue::Queue::new();
-//!
-//! q.open();
+//! let mut q = nfqueue::Queue::new(()).unwrap();
 //!
 //! let rc = q.bind(libc::AF_INET);
 //! assert!(rc == 0);
@@ -43,10 +41,7 @@
 //! q.create_queue(0, callback);
 //! q.set_mode(nfqueue::CopyMode::CopyPacket, 0xffff);
 //!
-//! q.set_callback(callback);
 //! q.run_loop();
-//!
-//! q.close();
 //! ```
 
 use libc;
@@ -56,6 +51,22 @@ mod hwaddr;
 
 pub use crate::message::*;
 mod message;
+
+#[derive(Debug)]
+pub enum NfqueueError {
+    /// The internal `nfq_open` failed.
+    Open,
+}
+
+impl std::fmt::Display for NfqueueError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "nfq_open failed")
+    }
+}
+
+impl std::error::Error for NfqueueError {}
+
+pub type NfqueueResult<T> = std::result::Result<T, NfqueueError>;
 
 type NfqueueHandle = *const libc::c_void;
 type NfqueueQueueHandle = *const libc::c_void;
@@ -114,35 +125,32 @@ pub struct Queue<T> {
     data: T,
 }
 
-impl<T: Send> Queue<T> {
-    /// Creates a new, uninitialized, `Queue`.
-    pub fn new(data: T) -> Queue<T> {
-        Queue {
-            qh: std::ptr::null_mut(),
-            qqh: std::ptr::null_mut(),
-            cb: None,
-            data,
-        }
+impl<T> Drop for Queue<T> {
+    fn drop(&mut self) {
+        unsafe { nfq_close(self.qh) };
     }
+}
 
-    /// Opens a NFLOG handler
+impl<T: Send> Queue<T> {
+    /// Creates a new Queue and opens a NFLOG handler
     ///
     /// This function obtains a netfilter queue connection handle. When you are
     /// finished with the handle returned by this function, you should destroy it
     /// by calling `close()`.
     /// A new netlink connection is obtained internally
     /// and associated with the queue connection handle returned.
-    pub fn open(&mut self) {
-        self.qh = unsafe { nfq_open() };
-    }
+    pub fn new(data: T) -> NfqueueResult<Queue<T>> {
+        let qh = unsafe { nfq_open() };
+        if qh.is_null() {
+            return Err(NfqueueError::Open);
+        }
 
-    /// Closes a NFLOG handler
-    ///
-    /// This function closes the nfqueue handler and free associated resources.
-    pub fn close(&mut self) {
-        assert!(!self.qh.is_null());
-        unsafe { nfq_close(self.qh) };
-        self.qh = std::ptr::null_mut();
+        Ok(Queue {
+            qh,
+            qqh: std::ptr::null_mut(),
+            cb: None,
+            data,
+        })
     }
 
     /// Bind a nfqueue handler to a given protocol family
@@ -158,7 +166,6 @@ impl<T: Send> Queue<T> {
     ///
     /// **Requires root privileges**
     pub fn bind(&self, pf: libc::c_int) -> i32 {
-        assert!(!self.qh.is_null());
         unsafe { nfq_bind_pf(self.qh, pf) }
     }
 
@@ -175,7 +182,6 @@ impl<T: Send> Queue<T> {
     ///
     /// **Requires root privileges**
     pub fn unbind(&self, pf: libc::c_int) -> i32 {
-        assert!(!self.qh.is_null());
         unsafe { nfq_unbind_pf(self.qh, pf) }
     }
 
@@ -185,7 +191,6 @@ impl<T: Send> Queue<T> {
     /// communication over the netlink connection associated with the given queue
     /// connection handle.
     pub fn fd(&self) -> i32 {
-        assert!(!self.qh.is_null());
         unsafe { nfq_fd(self.qh) }
     }
 
@@ -200,7 +205,6 @@ impl<T: Send> Queue<T> {
     /// * `num`: the number of the queue to bind to
     /// * `cb`: callback function to call for each queued packet
     pub fn create_queue(&mut self, num: u16, cb: fn(&Message, &mut T)) {
-        assert!(!self.qh.is_null());
         assert!(self.qqh.is_null());
         let self_ptr = &*self as *const Queue<T> as *mut libc::c_void;
         self.cb = Some(cb);
@@ -262,7 +266,6 @@ impl<T: Send> Queue<T> {
 
     /// Runs an infinite loop, waiting for packets and triggering the callback.
     pub fn run_loop(&self) {
-        assert!(!self.qh.is_null());
         assert!(!self.qqh.is_null());
         assert!(!self.cb.is_none());
 
@@ -312,34 +315,19 @@ mod tests {
 
     #[test]
     fn nfqueue_open() {
-        let mut q = Queue::new(());
-
-        q.open();
-
+        let q = crate::Queue::new(()).unwrap();
         let raw = q.qh as *const i32;
         println!("nfq_open: 0x{:x}", unsafe { *raw });
-
-        assert_eq!(false, q.qh.is_null());
-
-        q.close();
     }
 
     #[test]
     #[ignore]
     fn nfqueue_bind() {
-        let mut q = Queue::new(());
-
-        q.open();
-
+        let q = Queue::new(()).unwrap();
         let raw = q.qh as *const i32;
         println!("nfq_open: 0x{:x}", unsafe { *raw });
 
-        assert!(!q.qh.is_null());
-
         let rc = q.bind(libc::AF_INET);
         println!("q.bind: {}", rc);
-        assert_eq!(0, q.bind(libc::AF_INET));
-
-        q.close();
     }
 }
