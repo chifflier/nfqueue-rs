@@ -39,6 +39,6 @@ fn main() {
 
     q.create_queue(0, queue_callback);
     q.set_mode(nfqueue::CopyMode::CopyPacket, 0xffff);
-
+    q.set_queue_maxlen(100);
     q.run_loop();
 }
