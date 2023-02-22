@@ -13,4 +13,4 @@ edition="2018"
 libc = "^0.2"
 
 [dev_dependencies]
-pnet = "0.25.0"
+pnet = "0.33.0"
